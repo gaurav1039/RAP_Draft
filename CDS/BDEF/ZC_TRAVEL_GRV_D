@@ -1,0 +1,33 @@
+projection;
+strict ( 2 );
+use side effects;
+
+define behavior for ZC_TRAVEL_GRV_D //alias <alias_name>
+{
+  use create;
+  use update;
+  use delete;
+  use action deductDiscount;
+  use action acceptTravel;
+  use action rejectTravel;
+
+  use association _Booking { create; }
+}
+
+define behavior for ZC_BOOKING_GRV_D //alias <alias_name>
+{
+  use update;
+  use delete;
+
+  use association _Travel;
+  use association _BookingSupplement { create; }
+}
+
+define behavior for ZC_BOOKINGSUPPLEMENT_GRV_D //alias <alias_name>
+{
+  use update;
+  use delete;
+
+  use association _Travel;
+  use association _Booking;
+}

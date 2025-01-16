@@ -1,0 +1,140 @@
+managed;
+strict ( 2 );
+with draft;
+
+define behavior for ZR_TRAVEL_GRV_D //alias <alias_name>
+implementation in class zbp_travel_grv_d unique
+persistent table /dmo/a_travel_d
+draft table zdr_travel_grv
+lock master
+total etag LastChangedAt
+authorization master ( instance, global )
+//etag master <field_name>
+{
+  create ( precheck );
+  update ( precheck );
+  delete;
+  field ( numbering : managed, readonly ) TravelUUID;
+  field ( readonly ) TravelID, OverallStatus;
+  field ( mandatory ) CustomerID;
+  association _Booking { create ( authorization : update ); }
+
+  action ( authorization : update ) acceptTravel result [1] $self;
+  action ( authorization : update ) rejectTravel result [1] $self;
+  action ( authorization : update ) deductDiscount parameter ZA_DEDUCT_DISCOUNT_GRV result [1] $self;
+  internal action reCalcTotalPrice;
+
+  determination setTravelId on save { create; }
+  determination setStatusOpen on modify { create; }
+  determination calcTotPrice on modify { create; field BookingFee, CurrencyCode; }
+
+
+  side effects { field BookingFee affects field TotalPrice; }
+
+  validation validateCustomer on save { create; field CustomerID; }
+
+  draft action Resume;
+  draft action Edit;
+  draft action Activate optimized;
+  draft action Discard;
+  draft determine action Prepare;
+
+  mapping for /dmo/a_travel_d
+    {
+      AgencyID           = agency_id;
+      BeginDate          = begin_date;
+      BookingFee         = booking_fee;
+      CurrencyCode       = currency_code;
+      CustomerID         = customer_id;
+      Description        = description;
+      EndDate            = end_date;
+      LastChangedAt      = last_changed_at;
+      LocalCreatedAt     = local_created_at;
+      LocalCreatedBy     = local_created_by;
+      LocalLastChangedAt = local_last_changed_at;
+      LocalLastChangedBy = local_last_changed_by;
+      OverallStatus      = overall_status;
+      TotalPrice         = total_price;
+      TravelID           = travel_id;
+      TravelUUID         = travel_uuid;
+    }
+}
+
+define behavior for ZR_BOOKING_GRV_D //alias <alias_name>
+implementation in class zbp_booking_grv_d unique
+persistent table /dmo/a_booking_d
+draft table zdr_booking_grv
+lock dependent by _Travel
+authorization dependent by _Travel
+//etag master <field_name>
+{
+  update;
+  delete;
+  field ( numbering : managed, readonly ) BookingUUID;
+  field ( readonly ) TravelUUID;
+  field ( mandatory ) CustomerID;
+  association _Travel;
+  association _BookingSupplement { create ( authorization : update ); }
+
+  determination setBookingNumber on save { create; }
+  determination setBookingDate on save { create; }
+  determination calculateTotalPrice on modify { create; field FlightPrice, CurrencyCode; }
+
+  side effects { field FlightPrice affects field _Travel.TotalPrice; }
+
+  validation validateCustomer on save { create; field CustomerID; }
+
+  mapping for /dmo/a_booking_d
+    {
+      AirlineID          = carrier_id;
+      BookingDate        = booking_date;
+      BookingID          = booking_id;
+      BookingStatus      = booking_status;
+      BookingUUID        = booking_uuid;
+      ConnectionID       = connection_id;
+      CurrencyCode       = currency_code;
+      CustomerID         = customer_id;
+      FlightDate         = flight_date;
+      FlightPrice        = flight_price;
+      LocalLastChangedAt = local_last_changed_at;
+      TravelUUID         = parent_uuid;
+    }
+
+
+}
+
+define behavior for ZR_BOOKINGSUPPLEMENT_GRV_D //alias <alias_name>
+implementation in class zbp_bookingsupplement_grv_d unique
+persistent table /dmo/a_bksuppl_d
+draft table zdr_bksuppl_grv
+lock dependent by _Travel
+authorization dependent by _Travel
+//etag master <field_name>
+{
+  update;
+  delete;
+  field ( numbering : managed, readonly ) BookSupplUUID;
+  field ( readonly ) BookingUUID, TravelUUID;
+  field ( mandatory ) SupplementID;
+  association _Travel;
+  association _Booking;
+
+  determination setBookSupplNumber on save { create; }
+  determination calculateTotalPrice on modify { create; field CurrencyCode, BookSupplPrice; }
+
+  side effects { field BookSupplPrice affects field _Travel.TotalPrice; }
+
+  validation validateSupplement on save { create; field SupplementID; }
+
+  mapping for /dmo/a_bksuppl_d
+    {
+      BookSupplPrice      = price;
+      BookSupplUUID       = booksuppl_uuid;
+      BookingSupplementID = booking_supplement_id;
+      BookingUUID         = parent_uuid;
+      CurrencyCode        = currency_code;
+      LocalLastChangedAt  = local_last_changed_at;
+      SupplementID        = supplement_id;
+      TravelUUID          = root_uuid;
+    }
+}

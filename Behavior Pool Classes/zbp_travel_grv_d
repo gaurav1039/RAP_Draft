@@ -31,6 +31,17 @@ CLASS lhc_ZR_TRAVEL_GRV_D DEFINITION INHERITING FROM cl_abap_behavior_handler.
       IMPORTING keys FOR zr_travel_grv_d~settravelid.
     METHODS validatecustomer FOR VALIDATE ON SAVE
       IMPORTING keys FOR zr_travel_grv_d~validatecustomer.
+    METHODS activate FOR MODIFY
+      IMPORTING keys FOR ACTION zr_travel_grv_d~activate.
+
+    METHODS discard FOR MODIFY
+      IMPORTING keys FOR ACTION zr_travel_grv_d~discard.
+
+    METHODS edit FOR MODIFY
+      IMPORTING keys FOR ACTION zr_travel_grv_d~edit.
+
+    METHODS resume FOR MODIFY
+      IMPORTING keys FOR ACTION zr_travel_grv_d~resume.
 
 ENDCLASS.
 
@@ -482,6 +493,18 @@ CLASS lhc_ZR_TRAVEL_GRV_D IMPLEMENTATION.
       ENDIF.
 
     ENDLOOP.
+  ENDMETHOD.
+
+  METHOD Activate.
+  ENDMETHOD.
+
+  METHOD Discard.
+  ENDMETHOD.
+
+  METHOD Edit.
+  ENDMETHOD.
+
+  METHOD Resume.
   ENDMETHOD.
 
 ENDCLASS.

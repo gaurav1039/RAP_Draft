@@ -9,15 +9,15 @@ draft table zdr_travel_grv
 lock master
 total etag LastChangedAt
 authorization master ( instance, global )
-//etag master <field_name>
+etag master LocalLastChangedAt
 {
   create ( precheck );
   update ( precheck );
   delete;
   field ( numbering : managed, readonly ) TravelUUID;
   field ( readonly ) TravelID, OverallStatus;
-  field ( mandatory ) CustomerID;
-  association _Booking { create ( authorization : update ); }
+  field ( mandatory ) CustomerID, TotalPrice, LastChangedAt, LocalCreatedAt, LocalCreatedBy, LocalLastChangedAt, LocalLastChangedBy;
+  association _Booking { create ( authorization : update ); with draft;}
 
   action ( authorization : update ) acceptTravel result [1] $self;
   action ( authorization : update ) rejectTravel result [1] $self;
@@ -29,15 +29,22 @@ authorization master ( instance, global )
   determination calcTotPrice on modify { create; field BookingFee, CurrencyCode; }
 
 
-  side effects { field BookingFee affects field TotalPrice; }
+  side effects
+  { field BookingFee affects field TotalPrice;
+    field CurrencyCode affects field TotalPrice; }
 
   validation validateCustomer on save { create; field CustomerID; }
 
-  draft action Resume;
-  draft action Edit;
-  draft action Activate optimized;
-  draft action Discard;
-  draft determine action Prepare;
+  draft action Resume with additional implementation;
+  draft action Edit with additional implementation;
+  draft action Activate optimized with additional implementation;
+  draft action Discard with additional implementation;
+
+  draft determine action Prepare {
+  validation validateCustomer;
+  validation ZR_BOOKING_GRV_D~validateCustomer;
+  validation ZR_BOOKINGSUPPLEMENT_GRV_D~validateSupplement;
+  }
 
   mapping for /dmo/a_travel_d
     {
@@ -66,15 +73,15 @@ persistent table /dmo/a_booking_d
 draft table zdr_booking_grv
 lock dependent by _Travel
 authorization dependent by _Travel
-//etag master <field_name>
+etag master LocalLastChangedAt
 {
   update;
   delete;
   field ( numbering : managed, readonly ) BookingUUID;
-  field ( readonly ) TravelUUID;
+  field ( readonly ) TravelUUID, BookingID, BookingDate, LocalLastChangedAt ;
   field ( mandatory ) CustomerID;
-  association _Travel;
-  association _BookingSupplement { create ( authorization : update ); }
+  association _Travel { with draft; }
+  association _BookingSupplement { create ( authorization : update ); with draft; }
 
   determination setBookingNumber on save { create; }
   determination setBookingDate on save { create; }
@@ -109,15 +116,15 @@ persistent table /dmo/a_bksuppl_d
 draft table zdr_bksuppl_grv
 lock dependent by _Travel
 authorization dependent by _Travel
-//etag master <field_name>
+etag master LocalLastChangedAt
 {
   update;
   delete;
   field ( numbering : managed, readonly ) BookSupplUUID;
-  field ( readonly ) BookingUUID, TravelUUID;
+  field ( readonly ) BookingUUID, TravelUUID, BookingSupplementID, LocalLastChangedAt;
   field ( mandatory ) SupplementID;
-  association _Travel;
-  association _Booking;
+  association _Travel { with draft; }
+  association _Booking { with draft; }
 
   determination setBookSupplNumber on save { create; }
   determination calculateTotalPrice on modify { create; field CurrencyCode, BookSupplPrice; }
